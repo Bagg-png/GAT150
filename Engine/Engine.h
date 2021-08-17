@@ -26,6 +26,8 @@
 #include "Object/Upgrade.h"
 #include "Object/Enemy.h"
 #include "Object/Scene.h"
+#include "Component/SpriteComponent.h"
+#include "Component/PhysicsComponent.h"
 
 //#include <algorithm>
 //#include <vector>
