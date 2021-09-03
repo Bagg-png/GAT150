@@ -28,7 +28,7 @@ namespace ag {
 		//load surface
 		SDL_Surface * surface = IMG_Load(name.c_str());
 		if (surface == nullptr) {
-			std::cout << "SDL_Load Error: " << SDL_GetError() << std::endl;
+			//std::cout << "SDL_Load Error: " << SDL_GetError() << std::endl;
 			return false;
 		}
 	//create texture

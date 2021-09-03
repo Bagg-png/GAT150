@@ -27,6 +27,9 @@ namespace ag {
 		float timeScale{ 1 };
 		float deltaTime{ 0 };
 		float time{ 0 };
+		bool quit = false;
+		float start{ 0 };
+		float now{ 0 };
 
 	private:
 		clock::time_point frameTimePoint;

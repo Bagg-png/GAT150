@@ -1,0 +1,58 @@
+#include "RBPhysicsComponent.h"
+#include "Engine.h"
+
+namespace ag {
+	void RBPhysicsComponent::Update()
+	{
+		if (!body)
+		{
+			body = owner->scene->engine->Get<PhysicsSystem>()->CreateBody(owner->transform.position, owner->transform.rotation, data, owner);
+			body->SetGravityScale(data.gravityScale);
+
+			// Air resistance
+			body->SetLinearDamping(2.5f);
+		}
+
+		owner->transform.position = PhysicsSystem::WorldToScreen(body->GetPosition());
+		owner->transform.rotation = body->GetAngle();
+		velocity = body->GetLinearVelocity();
+	}
+
+	void RBPhysicsComponent::ApplyForce(const Vector2& force)
+	{
+		if (body) 
+		{
+			body->ApplyForceToCenter(force, true);
+		}
+	}
+
+	bool RBPhysicsComponent::Write(const rapidjson::Value& value) const
+	{
+		return false;
+	}
+
+	bool RBPhysicsComponent::Read(const rapidjson::Value& value)
+	{
+		JSON_READ(value, data.isDynamic);
+		JSON_READ(value, data.isSensor);
+		JSON_READ(value, data.lockAngle);
+		JSON_READ(value, data.size);
+		JSON_READ(value, data.density);
+		JSON_READ(value, data.friction);
+		JSON_READ(value, data.restitution);
+		JSON_READ(value, data.gravityScale);
+
+		return true;
+	}
+	RBPhysicsComponent::RBPhysicsComponent(const RBPhysicsComponent& other)
+	{
+		data = other.data;
+	}
+	RBPhysicsComponent::~RBPhysicsComponent()
+	{
+		if (body) {
+
+		owner->scene->engine->Get<PhysicsSystem>()->DestroyBody(body);
+		}
+	}
+}

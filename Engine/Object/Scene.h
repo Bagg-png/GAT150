@@ -1,15 +1,18 @@
 #pragma once
 #include "Object.h"
+#include "Core/Serializable.h"
 #include <list>
 #include <vector>
 #include <memory>
 
-namespace ag {
+namespace ag 
+{
 	class Actor;
 	class Engine;
 	class Renderer;
 
-	class Scene : public Object {
+	class Scene : public Object, public ISerializable 
+	{
 	public: 
 		void Update(float dt);
 		void Draw(Renderer* renderer);
@@ -18,18 +21,24 @@ namespace ag {
 		void RemoveActor(Actor* actor);
 		void RemoveAllActors();
 
+		Actor* FindActor(const std::string& name);
+
 		template<typename T>
 		T* GetActor();
 
 		template<typename T>
 		std::vector<T*> GetAllActors();
 
+		virtual bool Write(const rapidjson::Value& value) const override;
+		virtual bool Read(const rapidjson::Value& value) override;
+		
 	public:
 		Engine* engine{nullptr};
 
 	private:
 		std::vector<std::unique_ptr<Actor>> actors;
 		std::vector<std::unique_ptr<Actor>> newActors;
+
 	};
 
 	template<typename T>

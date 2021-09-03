@@ -1,0 +1,230 @@
+{
+	"actors":[
+	{
+			"type":"Actor",
+			"name":"Background",
+			"tag":"",
+			"transform":{
+				"position":[
+					400, 
+					300
+				]
+			},
+		"components":[
+				{
+					"type":"SpriteComponent",
+					"textureName":"background.png"
+					}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"Score",
+		"transform":{
+			"position":[
+				60,
+				20
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"0000"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"health",
+		"transform":{
+			"position":[
+				700,
+				20
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[1,0,0],
+				"text":"3"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"GameOver",
+		"transform":{
+			"position":[
+				400,
+				300
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"Game Over"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"Restart",
+		"transform":{
+			"position":[
+				400,
+				350
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"Press Spacebar to restart"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"WASD1",
+		"transform":{
+			"position":[
+				400,
+				350
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"W - Jump   A - Move Left   D - Move Right"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"WASD2",
+		"transform":{
+			"position":[
+				400,
+				450
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"A/D + Spacebar - Dash Attack"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"WASD3",
+		"transform":{
+			"position":[
+				400,
+				500
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"I - Return to Title screen   Esc - Quit Game"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"Info",
+		"transform":{
+			"position":[
+				400,
+				300
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":23,
+				"color":[0,0,0],
+				"text":"Collect coins and defeat enemies to earn as many points as you can!"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"InfoKey",
+		"transform":{
+			"position":[
+				400,
+				450
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":15,
+				"color":[0,0,0],
+				"text":"Press I to read instructions"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"StartGame",
+		"transform":{
+			"position":[
+				400,
+				400
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":15,
+				"color":[0,0,0],
+				"text":"Press Spacebar to start"
+				}
+			]
+		},
+		{
+		"type":"Actor",
+		"name":"Title",
+		"transform":{
+			"position":[
+				400,
+				300
+				]
+			},
+			"components":[
+			{
+				"type":"TextComponent",
+				"fontName":"Fonts/Sheeping Dogs.ttf",
+				"fontSize":20,
+				"color":[0,0,0],
+				"text":"Grab the Gold"
+				}
+			]
+		}
+	]
+}
