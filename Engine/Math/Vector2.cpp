@@ -8,6 +8,14 @@ namespace ag {
 	const Vector2 Vector2::right{ 1,0 };
 	const Vector2 Vector2::one{ 1,1 };
 	const Vector2 Vector2::zero{ 0,0 };
+	const Vector2 Vector2::pos1{ 300,400 };
+	const Vector2 Vector2::pos2{ 700,250 };
+	const Vector2 Vector2::pos3{ 450,150 };
+	const Vector2 Vector2::pos4{ 700,100 };
+	const Vector2 Vector2::pos5{ 50,400 };
+	const Vector2 Vector2::pos6{ 50,500 };
+	const Vector2 Vector2::pos7{ 700,500 };
+	const Vector2 Vector2::pos8{ 33,300 };
 
 	std::istream& operator >> (std::istream& stream, Vector2& v) {
 		std::string line;
@@ -22,6 +30,11 @@ namespace ag {
 			v.y = std::stof(y);
 		}
 
+		return stream;
+	}
+	std::ostream& operator<<(std::ostream& stream, Vector2& v)
+	{
+		stream << v.x << " " << v.y;
 		return stream;
 	}
 }

@@ -1,13 +1,74 @@
 #include "Game.h"
+#include <fstream>
 
-int main(int, char**) {
+class Base 
+{
+public:
+	virtual void Read(std::istream& stream) = 0;
+	virtual void Write(std::ostream& stream) = 0;
+};
+
+class A : public Base 
+{
+public:
+	virtual void Read(std::istream& stream) override
+	{
+		stream >> health;
+		stream >> speed;
+	}
+
+	virtual void Write(std::ostream& stream) override
+	{
+		stream << health << std::endl;
+		stream << speed << std::endl;
+	}
+
+private:
+	int health;
+	float speed;
+
+};
+
+int main(int, char**) 
+{
 	Game game;
 	ag::Timer timer;
 	ag::Engine engine;
 	ag::Scene scene;
 	scene.engine = &engine;
-
 	game.Initialize();
+
+	/*rapidjson::Document document;
+	bool success = ag::json::Load("json.txt", document);
+	assert(success);
+
+	std::string string;
+	JSON_READ(document, string);
+	std::cout << string << std::endl;
+
+	bool boolean; 
+	JSON_READ(document, boolean);
+	std::cout << boolean << std::endl;
+
+	int i1;
+	ag::json::Get(document, "integer1", i1); 
+	std::cout << i1 << std::endl;
+
+	int i2; 
+	ag::json::Get(document, "integer2", i2);
+	std::cout << i2 << std::endl;
+
+	float f;
+	ag::json::Get(document, "float", f);
+	std::cout << f << std::endl;
+
+	ag::Vector2 v2;
+	ag::json::Get(document, "vector2", v2); 
+	std::cout << v2 << std::endl;
+
+	ag::Color color; 
+	ag::json::Get(document, "color", color);
+	std::cout << color << std::endl;*/
 
 	/*engine.StartUp();
 	engine.Get<ag::Renderer>()->Create("GAME", 800, 600);*/

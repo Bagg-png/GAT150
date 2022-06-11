@@ -4,14 +4,15 @@
 class Game {
 	public:
 		enum class eState {
+			Reset,
 			Title,
+			Instructions,
 			StartGame,
 			StartLevel,
-			Game,
-			Damage,
+			Level,
+			PlayerDead,
 			GameOver
 		};
-	public:
 		void Initialize();
 		void ShutDown();
 
@@ -21,11 +22,20 @@ class Game {
 		bool IsQuit() { return quit; }
 
 private:
-	void UpdateTitle(float dt);
-	void StartGame(float dt);
-	void UpdateLevel(float dt);
-	void OnAddPoints(const ag::Event& event);
-	void OnPlayerDead(const ag::Event& event);
+		void Reset();
+		void Title();
+		void Instructions();
+		void StartGame();
+		void StartLevel();
+		void Level();
+		void PlayerDead();
+		void GameOver();
+		void SpawnEnemy();
+
+		void OnAddScore(const ag::Event& event);
+		void OnAddHealth(const ag::Event& event);
+		void OnSubHealth(const ag::Event& event);
+		void OnSubEnemy(const ag::Event& event);
 
 	public:
 		std::unique_ptr<ag::Engine> engine;
@@ -33,20 +43,13 @@ private:
 
 	private:
 		bool quit = false;
-		eState state = eState::Title;
-		float stateTimer = 0.0f;
-
-		size_t score = 0;
-		size_t lives = 0;
-
-		ag::AudioChannel musicChannel;
-		std::shared_ptr<ag::Texture> particleTexture;
-		std::shared_ptr<ag::Texture> playerTexture;
-		std::shared_ptr<ag::Texture> enemyTexture;
-		std::shared_ptr<ag::Texture> bulletTexture;
-		std::shared_ptr<ag::Texture> titleTexture;
-		std::shared_ptr<ag::Texture> controlsTexture;
-		std::shared_ptr<ag::Texture> overTexture;
-		std::shared_ptr<ag::Texture> restartTexture;
-		std::shared_ptr<ag::Texture> startTexture;
+		eState state = eState::Reset;
+		float health{ 3 };
+		int enemyCount{ 2 };
+		int enemyStorage{ 2 };
+		int score{ 0 };
+		float stateTimer{ 0 };
+		float coinSpawnTimer{ 0 };
+		float chestSpawnTimer{ 0 };
+		float healSpawnTimer{ 0 };
 };

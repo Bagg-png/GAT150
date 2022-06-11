@@ -1,4 +1,5 @@
 #pragma once
+#include "box2d/box2d.h"
 #include <cmath>
 #include <iostream>
 
@@ -10,6 +11,7 @@ namespace ag {
 		Vector2(float x) : x{ x }, y{ x } {}
 		Vector2(float x, float y) : x{ x }, y{ y } {}
 		Vector2(int x, int y) : x{ static_cast<float>(x) }, y{ static_cast<float>(y) } {}
+		Vector2(const b2Vec2 v2) : x{ v2.x }, y{v2.y} {}
 
 		float operator [] (size_t index) const { return (&x)[index]; }
 		float& operator [] (size_t index) { return (&x)[index]; }
@@ -41,6 +43,8 @@ namespace ag {
 		bool operator == (const Vector2& v) const { x == v.x && y == v.y; }
 		bool operator != (const Vector2& v) const { x != v.x || y != v.y; }
 
+		operator b2Vec2() const { return b2Vec2{ x , y }; }
+
 		float Length() const;
 		float LengthSqr() const;
 
@@ -56,6 +60,7 @@ namespace ag {
 		static float Dot(const Vector2& v1, const Vector2& v2);
 
 		friend std::istream& operator >> (std::istream& stream, Vector2& v);
+		friend std::ostream& operator << (std::ostream& stream, Vector2& v);
 
 		static const Vector2 up;
 		static const Vector2 down;
@@ -63,6 +68,14 @@ namespace ag {
 		static const Vector2 right;
 		static const Vector2 one;
 		static const Vector2 zero;
+		static const Vector2 pos1;
+		static const Vector2 pos2;
+		static const Vector2 pos3;
+		static const Vector2 pos4;
+		static const Vector2 pos5;
+		static const Vector2 pos6;
+		static const Vector2 pos7;
+		static const Vector2 pos8;
 	};
 
 	inline float Vector2::Length() const {

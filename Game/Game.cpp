@@ -1,8 +1,9 @@
 #include "Game.h"
-//#include "Actors/Player.h"
-//#include "Actors/Enemy.h"
-//#include "Actors/Projectile.h"
-//#include "Actors/Upgrade.h"
+#include "GameComponent/PlayerComponent.h"
+#include "GameComponent/EnemyComponent.h"
+#include "GameComponent/PickupComponent.h"
+
+int global = 10;
 
 void Game::Initialize()
 {
@@ -11,49 +12,23 @@ void Game::Initialize()
 	engine->StartUp();
 	engine->Get<ag::Renderer>()->Create("GAME", 800, 600);
 
+	//register classes
+	REGISTER_CLASS(ag::PlayerComponent);
+	REGISTER_CLASS(ag::EnemyComponent);
+	REGISTER_CLASS(ag::PickupComponent);
+
 	//Create scene
 	scene = std::make_unique<ag::Scene>();
 	scene->engine = engine.get();
+
+	ag::SeedRandom(static_cast<unsigned int>(time(nullptr)));
 	ag::SetFilePath("../Resources");
 
-	engine->Get<ag::EventSystem>()->Subscribe("AddPoints", std::bind(&Game::OnAddPoints, this, std::placeholders::_1));
-	engine->Get<ag::EventSystem>()->Subscribe("PlayerDead", std::bind(&Game::OnPlayerDead, this, std::placeholders::_1));
-
-
-	int size = 20;
-	std::shared_ptr<ag::Font> font2d = engine->Get<ag::ResourceSystem>()->Get<ag::Font>("Fonts/2dumb.ttf", &size);
-	std::shared_ptr<ag::Font> font3d = engine->Get<ag::ResourceSystem>()->Get<ag::Font>("Fonts/3dumb.ttf", &size);
-
-	titleTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	titleTexture->Create(font3d->CreateSurface("DaGame", ag::Color{ 1,1,1 }));
-	engine->Get<ag::ResourceSystem>()->Add("titleTexture", titleTexture);
-	size = 16;
-	controlsTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	controlsTexture->Create(font2d->CreateSurface("Press 'S' Key to cycle colors", ag::Color{ 1,1,1 }));
-	engine->Get<ag::ResourceSystem>()->Add("controlsTexture", controlsTexture);
-
-	startTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	startTexture->Create(font2d->CreateSurface("Press Spacebar to Start", ag::Color{ 1,1,1 }));
-	engine->Get<ag::ResourceSystem>()->Add("startTexture", startTexture);
-
-	overTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	overTexture->Create(font2d->CreateSurface("GameOver", ag::Color{ 1,0,0 }));
-	engine->Get<ag::ResourceSystem>()->Add("overTexture", overTexture);
-
-	restartTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	restartTexture->Create(font2d->CreateSurface("Press Spacebar to Restart", ag::Color{ 1,0,0 }));
-	engine->Get<ag::ResourceSystem>()->Add("restartTexture", restartTexture);
-
-	playerTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	bulletTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	enemyTexture = std::make_shared<ag::Texture>(engine->Get<ag::Renderer>());
-	
-	engine->Get<ag::ResourceSystem>()->Add("playerTexture", playerTexture);
-	engine->Get<ag::ResourceSystem>()->Add("bulletTexture", bulletTexture);
-	engine->Get<ag::ResourceSystem>()->Add("enemyTexture", enemyTexture);
-
-	engine->Get<ag::AudioSystem>()->AddAudio("explosion", "audio/explosion.wav");
-	engine->Get<ag::AudioSystem>()->AddAudio("music", "audio/song.mp3");
+	//events
+	engine->Get<ag::EventSystem>()->Subscribe("add_score", std::bind(&Game::OnAddScore, this, std::placeholders::_1));
+	engine->Get<ag::EventSystem>()->Subscribe("add_health", std::bind(&Game::OnAddHealth, this, std::placeholders::_1));
+	engine->Get<ag::EventSystem>()->Subscribe("sub_health", std::bind(&Game::OnSubHealth, this, std::placeholders::_1));
+	engine->Get<ag::EventSystem>()->Subscribe("sub_enemy", std::bind(&Game::OnSubEnemy, this, std::placeholders::_1));
 }
 
 void Game::ShutDown()
@@ -65,64 +40,53 @@ void Game::ShutDown()
 void Game::Update()
 {
 	engine->Update();
-	float dt = engine->time.deltaTime;
-	stateTimer += dt;
-	//switch tab tab *variable name* enter
+
+	if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_ESCAPE) == ag::eKeyState::PRESSED) {
+		quit = true;
+	}
 
 	switch (state)
 	{
+	case Game::eState::Reset:
+		Reset();
+		break;
 	case Game::eState::Title:
-		if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_SPACE) == ag::eKeyState::PRESSED) {
-			state = eState::StartGame;
-		}
+		Title();
+		break;
+	case Game::eState::Instructions:
+		Instructions();
 		break;
 	case Game::eState::StartGame:
-		//engine->Get<ag::AudioSystem>()->ShutDown();
-		engine->Get<ag::AudioSystem>()->StartUp();
-		engine->Get<ag::AudioSystem>()->AddAudio("explosion", "Audio/explosion.wav");
-		engine->Get<ag::AudioSystem>()->AddAudio("playerFire", "Audio/projectileFire.wav");
-		engine->Get<ag::AudioSystem>()->AddAudio("song", "Audio/song.mp3");
-		score = 0;
-		lives = 3;
-		state = eState::StartLevel;
+		StartGame();
 		break;
 	case Game::eState::StartLevel:
-		StartGame(dt);
-		state = eState::Game;
+		StartLevel();
 		break;
-	case Game::eState::Game:
-	musicChannel = engine->Get<ag::AudioSystem>()->PlayAudio("song", 1, 1, true);
-		//engine->Get<ag::AudioSystem>()->PlayAudio("song");
-		if (scene->GetAllActors<ag::Enemy>().size() == 0) {
-			musicChannel.Stop();
-			UpdateLevel(dt);
-			scene->AddActor(std::make_unique<ag::Upgrade>(ag::Transform{ ag::Vector2{400.0f, 300.0f}, 0.0f, 3.0f }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("upgrade.png", engine->Get<ag::Renderer>()),100.0f));
-		}
+	case Game::eState::Level:
+		Level();
 		break;
-	case Game::eState::Damage:
-		lives -= 1;
+	case Game::eState::PlayerDead:
+		PlayerDead();
 		break;
 	case Game::eState::GameOver:
-		if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_SPACE) == ag::eKeyState::PRESSED) {
-			scene->RemoveAllActors();
-			state = eState::StartGame;
-		}
+		GameOver();
 		break;
 	default:
 		break;
 	}
 
-
-	if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_ESCAPE) == ag::eKeyState::PRESSED) {
-		quit = true;
+	//update score and health
+	auto scoreActor = scene->FindActor("Score");
+	if(scoreActor)
+	{
+	scoreActor->GetComponent<ag::TextComponent>()->SetText("Score: " + std::to_string(score));
 	}
-	//if (engine->Get<ag::InputSystem>()->GetButtonState((int)ag::eMouseButton::RIGHT) == ag::eKeyState::PRESSED) {
-	//	ag::Vector2 position = engine->Get<ag::InputSystem>()->GetMousePosition();
-	//	//std::cout << position.x << " " << position.y << std::endl;
 
-	//	engine->Get<ag::AudioSystem>()->PlayAudio("explosion", 1, ag::RandomRange(0.2f, 2.0f));
-	//	//musicChannel.SetPitch(ag::RandomRange(0.2f, 2.0f));
-	//}
+	auto healthActor = scene->FindActor("health");
+	if (healthActor)
+	{
+		healthActor->GetComponent<ag::TextComponent>()->SetText("health: " + std::to_string(health));
+	}
 
 	scene->Update(engine->time.deltaTime);
 }
@@ -130,32 +94,6 @@ void Game::Update()
 void Game::Draw()
 {
 	engine->Get<ag::Renderer>()->BeginFrame();
-		ag::Transform p;
-		p.position = { 350,400 };
-	switch (state)
-	{
-	case Game::eState::Title:
-		engine->Get<ag::Renderer>()->Draw(titleTexture, p);
-		engine->Get<ag::Renderer>()->Draw(controlsTexture, p.position.y + 30);
-		engine->Get<ag::Renderer>()->Draw(startTexture, p.position.y + 60);
-		break;
-	case Game::eState::StartGame:
-		break;
-	case Game::eState::StartLevel:
-		break;
-	case Game::eState::Game:
-		break;
-	case Game::eState::GameOver:
-		engine->Get<ag::Renderer>()->Draw(overTexture, p);
-		engine->Get<ag::Renderer>()->Draw(restartTexture, p.position.y + 30);
-		break;
-	default:
-		break;
-	}
-	/*graphics.SetColor(ag::Color::white);
-	graphics.DrawString(30, 20, std::to_string(score).c_str());
-	graphics.DrawString(750, 20, std::to_string(lives).c_str());*/
-
 
 	engine->Draw(engine->Get<ag::Renderer>());
 	scene->Draw(engine->Get<ag::Renderer>());
@@ -163,71 +101,221 @@ void Game::Draw()
 	engine->Get<ag::Renderer>()->EndFrame();
 }
 
-void Game::UpdateTitle(float dt)
+void Game::Reset()
 {
+	scene->RemoveAllActors();
+
+	rapidjson::Document document;
+	bool success = ag::json::Load("title.txt", document);
+	assert(success);
+	scene->Read(document);
+	scene->engine->Get<ag::AudioSystem>()->ShutDown();
+	scene->engine->Get<ag::AudioSystem>()->StartUp();
+	scene->engine->Get<ag::AudioSystem>()->AddAudio("song", "Audio/song.mp3");
+	scene->engine->Get<ag::AudioSystem>()->PlayAudio("song", 0.5f, 1, true);
+	state = eState::Title;
+}
+
+void Game::Title()
+{
+	scene->FindActor("Title")->active = true;
+	scene->FindActor("StartGame")->active = true;
+	scene->FindActor("InfoKey")->active = true;
+	scene->FindActor("WASD1")->active = false;
+	scene->FindActor("WASD2")->active = false;
+	scene->FindActor("WASD3")->active = false;
+	scene->FindActor("Info")->active = false;
+	scene->FindActor("GameOver")->active = false;
+	scene->FindActor("Restart")->active = false;
+
 	if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_SPACE) == ag::eKeyState::PRESSED) {
+		auto title = scene->FindActor("Title")->active = false;
+		auto startGame = scene->FindActor("StartGame")->active = false;
+		auto infoKey = scene->FindActor("InfoKey")->active = false;
+
 		state = eState::StartGame;
 	}
-}
-
-void Game::StartGame(float dt)
-{
-	int enemyCount = ag::RandomRangeInt(3, 7);
-	std::unique_ptr<ag::Player> player = std::make_unique<ag::Player>(ag::Transform{ ag::Vector2{400.0f, 300.0f}, 0.0f, 1.5f },
-		engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("player1.png", engine->Get<ag::Renderer>()),
-		engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("bulletR2.png", engine->Get<ag::Renderer>()),
-		engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("bulletB2.png", engine->Get<ag::Renderer>()),
-		engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("bulletY2.png", engine->Get<ag::Renderer>()),
-		80.0f);
-	scene->AddActor(std::move(player));
-		for (size_t i = 0; i < enemyCount; i++) {
-			int r = ag::RandomRangeInt(1, 4);
-			switch (r) {
-			case 1:
-				scene->AddActor(std::make_unique<ag::Enemy>(ag::Transform{ ag::Vector2{ag::RandomRange(0.0f,800.0f), ag::RandomRange(0.0f,600.0f)},
-					ag::RandomRange(0, ag::TwoPi), ag::RandomRange(1.5f,2.0f) }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("enemyR2.png", engine->Get<ag::Renderer>()), "red", ag::RandomRange(30.0f, 60.0f)));
-				break;
-			case 2:
-				scene->AddActor(std::make_unique<ag::Enemy>(ag::Transform{ ag::Vector2{ag::RandomRange(0.0f,800.0f), ag::RandomRange(0.0f,600.0f)},
-					ag::RandomRange(0, ag::TwoPi), ag::RandomRange(1.5f,2.0f) }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("enemyB2.png", engine->Get<ag::Renderer>()), "blue", ag::RandomRange(30.0f, 60.0f)));
-				break;
-			case 3:
-				scene->AddActor(std::make_unique<ag::Enemy>(ag::Transform{ ag::Vector2{ag::RandomRange(0.0f,800.0f), ag::RandomRange(0.0f,600.0f)},
-					ag::RandomRange(0, ag::TwoPi), ag::RandomRange(1.5f,2.0f) }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("enemyY2.png", engine->Get<ag::Renderer>()), "yellow", ag::RandomRange(30.0f, 60.0f)));
-				break;
-			}
-		}
-}
-
-void Game::UpdateLevel(float dt)
-{
-	for (size_t i = 0; i < 5; i++) {
-		int r = ag::RandomRangeInt(1, 4);
-		switch (r) {
-		case 1:
-			scene->AddActor(std::make_unique<ag::Enemy>(ag::Transform{ ag::Vector2{ag::RandomRange(0.0f,800.0f), ag::RandomRange(0.0f,600.0f)},
-					ag::RandomRange(0, ag::TwoPi), ag::RandomRange(2.0f,4.0f) }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("enemyR2.png", engine->Get<ag::Renderer>()), "red", ag::RandomRange(30.0f, 60.0f)));
-			break;
-		case 2:
-			scene->AddActor(std::make_unique<ag::Enemy>(ag::Transform{ ag::Vector2{ag::RandomRange(0.0f,800.0f), ag::RandomRange(0.0f,600.0f)},
-					ag::RandomRange(0, ag::TwoPi), ag::RandomRange(2.0f,4.0f) }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("enemyB2.png", engine->Get<ag::Renderer>()), "blue", ag::RandomRange(30.0f, 60.0f)));
-			break;
-		case 3:
-			scene->AddActor(std::make_unique<ag::Enemy>(ag::Transform{ ag::Vector2{ag::RandomRange(0.0f,800.0f), ag::RandomRange(0.0f,600.0f)},
-					ag::RandomRange(0, ag::TwoPi), ag::RandomRange(2.0f,4.0f) }, engine->Get<ag::ResourceSystem>()->Get<ag::Texture>("enemyY2.png", engine->Get<ag::Renderer>()), "yellow", ag::RandomRange(30.0f, 60.0f)));
-			break;
-		}
+	else if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_I) == ag::eKeyState::PRESSED) {
+		state = eState::Instructions;
 	}
 }
 
-void Game::OnAddPoints(const ag::Event& event)
+void Game::Instructions()
 {
+	auto wasd1 = scene->FindActor("WASD1")->active = true;
+	auto wasd2 = scene->FindActor("WASD2")->active = true;
+	auto wasd3 = scene->FindActor("WASD3")->active = true;
+	auto restart = scene->FindActor("Info")->active = true;
+	auto title = scene->FindActor("Title")->active = false;
+	auto startGame = scene->FindActor("StartGame")->active = false;
+	auto infoKey = scene->FindActor("InfoKey")->active = false;
+	if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_I) == ag::eKeyState::PRESSED) {
+		state = eState::Title;
+	}
+}
+
+void Game::StartGame()
+{
+	rapidjson::Document document;
+	bool success = ag::json::Load("scene.txt", document);
+	assert(success);
+	scene->Read(document);
+
+	ag::Tilemap tilemap;
+	tilemap.scene = scene.get();
+	success = ag::json::Load("map.txt", document);
+	assert(success);
+	tilemap.Read(document);
+	tilemap.Create();
+	SpawnEnemy();
+
+	state = eState::StartLevel;
+	stateTimer = 0;
+}
+
+void Game::StartLevel()
+{
+	stateTimer += engine->time.deltaTime;
+	if(stateTimer >= 1)
+	{
+		auto player = ag::ObjectFactory::Instance().Create<ag::Actor>("Player");
+		player->transform.position = ag::Vector2{ 400, 200 };
+		scene->AddActor(std::move(player));
+
+		coinSpawnTimer = 3;
+		healSpawnTimer = 10;
+		chestSpawnTimer = 6;
+		state = eState::Level;
+	}
+}
+
+void Game::Level()
+{
+	coinSpawnTimer -= engine->time.deltaTime;
+	healSpawnTimer -= engine->time.deltaTime;
+	chestSpawnTimer -= engine->time.deltaTime;
+	auto chicken = scene->FindActor("heal");
+	auto chest = scene->FindActor("chest");
+	if (coinSpawnTimer <= 0) 
+	{
+		coinSpawnTimer = ag::RandomRange(2, 5);
+		auto coin = ag::ObjectFactory::Instance().Create<ag::Actor>("coin");
+		coin->transform.position = ag::Vector2{ ag::RandomRange(100, 700), 150.0f };
+		scene->AddActor(std::move(coin));
+	}
+	if (healSpawnTimer <= 0 && !chicken)
+	{
+		healSpawnTimer = ag::RandomRange(7, 13);
+		int pos = ag::RandomRange(1, 6);
+		ag::Vector2 randPos = { 0,0 };
+		switch (pos)
+		{
+		case 1:
+			randPos = ag::Vector2::pos1;
+			break;
+		case 2:
+			randPos = ag::Vector2::pos2;
+			break;
+		case 3:
+			randPos = ag::Vector2::pos3;
+			break;
+		case 4:
+			randPos = ag::Vector2::pos4;
+			break;
+		case 5:
+			randPos = ag::Vector2::pos5;
+			break;
+		default:
+			break;
+		}
+		auto heal = ag::ObjectFactory::Instance().Create<ag::Actor>("heal");
+		heal->transform.position = randPos;
+		scene->AddActor(std::move(heal));
+	}
+	if (chestSpawnTimer <= 0 && !chest)
+	{
+		chestSpawnTimer = ag::RandomRange(7, 15);
+		int pos = ag::RandomRange(6, 9);
+		ag::Vector2 randPos = { 0,0 };
+		switch (pos)
+		{
+		case 6:
+			randPos = ag::Vector2::pos6;
+			break;
+		case 7:
+			randPos = ag::Vector2::pos7;
+			break;
+		case 8:
+			randPos = ag::Vector2::pos8;
+			break;
+		default:
+			break;
+		}
+		auto chest = ag::ObjectFactory::Instance().Create<ag::Actor>("chest");
+		chest->transform.position = randPos;
+		scene->AddActor(std::move(chest));
+	}
+
+}
+
+void Game::PlayerDead()
+{
+	scene->FindActor("Player")->GetComponent<ag::PlayerComponent>()->state = ag::PlayerComponent::pState::DEAD;
+
+	auto gameOver = scene->FindActor("GameOver");
+	assert(gameOver);
+	gameOver->active = true;
+	auto restart = scene->FindActor("Restart");
+	assert(restart);
+	restart->active = true;
+	if (engine->Get<ag::InputSystem>()->GetKeyState(SDL_SCANCODE_SPACE) == ag::eKeyState::PRESSED) {
+		state = eState::Reset;
+	}
+}
+
+void Game::GameOver()
+{
+
+}
+
+void Game::SpawnEnemy()
+{
+	for (int i = 0; i < enemyCount; i++) {
+	auto enemy = ag::ObjectFactory::Instance().Create<ag::Actor>("enemy");
+	enemy->transform.position = ag::Vector2{ ag::RandomRange(0,700), ag::RandomRange(0,30) };
+	scene->AddActor(std::move(enemy));
+	}
+}
+
+void Game::OnAddScore(const ag::Event& event)
+{
+	//grabs score amount from event
 	score += std::get<int>(event.data);
 }
 
-void Game::OnPlayerDead(const ag::Event& event)
+void Game::OnAddHealth(const ag::Event& event)
 {
-	lives--;
-	std::cout << std::get<std::string>(event.data) << std::endl;
-	state = eState::GameOver;
+	health += std::get<int>(event.data);
+	if (health > 5) health = 5;
+	
+}
+
+void Game::OnSubHealth(const ag::Event& event)
+{
+	health -= std::get<int>(event.data);
+	if (health <= 0) {
+		health = 0;
+		state = eState::PlayerDead;
+	}
+}
+
+void Game::OnSubEnemy(const ag::Event& event)
+{
+	enemyCount -= std::get<int>(event.data);
+	score += 5;
+	if (enemyCount <= 0) {
+		enemyStorage++;
+		enemyCount = enemyStorage;
+		SpawnEnemy();
+	}
 }
